@@ -2,7 +2,7 @@
   "name": "fileinator",
   "displayName": "Fileinator",
   "description": "Scans folders to generate complete file data or a tree structure in a new tab",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "publisher": "shinazbinshajahan",
   "icon":"icon.png",
   "repository": {
