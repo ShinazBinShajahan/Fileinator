@@ -1,15 +1,18 @@
 {
   "name": "fileinator",
   "displayName": "Fileinator",
-  "description": "Scans folders and displays file contents or tree structure in a new tab",
+  "description": "Scans folders to generate complete file data or a tree structure in a new tab",
   "version": "0.0.1",
   "publisher": "shinazbinshajahan",
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/shinazbinshajahan/fileinator.git"
+  },
+  "keywords": ["file", "tree", "scan", "folder", "utility"],
+  "categories": ["Other"],
   "engines": {
       "vscode": "^1.85.0"
   },
-  "categories": [
-      "Other"
-  ],
   "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
@@ -27,7 +30,7 @@
               "title": "Fileinator - Ignore from Generations"
           },
           {
-              "command": "fileinator.ignoreFromGenerations",
+              "command": "fileinator.includeInGenerations",
               "title": "Fileinator - Include in Generations"
           }
       ],
