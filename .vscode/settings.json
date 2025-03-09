@@ -1,0 +1,9 @@
+{
+    "fileinator.ignoredFolders": [
+        "fileinator-0.0.1.vsix",
+        "fileinator-0.0.2.vsix",
+        "fileinator-0.0.6.vsix",
+        "fileinator-0.0.4.vsix",
+        "icon.png"
+    ]
+}
