@@ -4,6 +4,7 @@
   "description": "Scans folders to generate complete file data or a tree structure in a new tab",
   "version": "0.0.1",
   "publisher": "shinazbinshajahan",
+  "icon":"icon.png",
   "repository": {
       "type": "git",
       "url": "https://github.com/shinazbinshajahan/fileinator.git"
