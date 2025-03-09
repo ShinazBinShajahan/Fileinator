@@ -62,13 +62,17 @@ function activate(context) {
         }
 
         let outputContent = '';
-        for (const file of files) {
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
             const relativePath = path.relative(workspaceFolder.uri.fsPath, file).replace(/\\/g, '/');
             try {
                 const content = await fs.readFile(file, 'utf8');
                 outputContent += `${relativePath}:\n\ncontents:\n${content.trim()}\n\n`;
             } catch (err) {
                 outputContent += `${relativePath}:\n\ncontents:\nError reading file: ${err.message}\n\n`;
+            }
+            if (i < files.length - 1) {
+                outputContent += '---\n\n';
             }
         }
 
@@ -164,7 +168,7 @@ function activate(context) {
         const ignoredFolders = config.get('ignoredFolders', []);
 
         if (ignoredFolders.includes(relativeFolder)) {
-            vscode.window.showInformationMessage(`Folder "${relativeFolder}" is already ignored.`);
+            vscode.window.showInformationMessage(`Folder "${relativeFolder}" is already ignored. Use "Include in Generations" to re-enable it.`);
             return;
         }
 
@@ -191,7 +195,7 @@ function activate(context) {
         let ignoredFolders = config.get('ignoredFolders', []);
 
         if (!ignoredFolders.includes(relativeFolder)) {
-            vscode.window.showInformationMessage(`Folder "${relativeFolder}" is not currently ignored.`);
+            vscode.window.showInformationMessage(`Folder "${relativeFolder}" is not ignored. Use "Ignore from Generations" to ignore it.`);
             return;
         }
 
