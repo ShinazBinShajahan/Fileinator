@@ -21,6 +21,14 @@
           {
               "command": "fileinator.generateFileTree",
               "title": "Fileinator - Generate FileTree"
+          },
+          {
+              "command": "fileinator.ignoreFromGenerations",
+              "title": "Fileinator - Ignore from Generations"
+          },
+          {
+              "command": "fileinator.ignoreFromGenerations",
+              "title": "Fileinator - Include in Generations"
           }
       ],
       "menus": {
@@ -34,8 +42,28 @@
                   "when": "resourceDirname",
                   "command": "fileinator.generateFileTree",
                   "group": "navigation"
+              },
+              {
+                  "when": "resourceDirname",
+                  "command": "fileinator.ignoreFromGenerations",
+                  "group": "navigation"
+              },
+              {
+                  "when": "resourceDirname",
+                  "command": "fileinator.includeInGenerations",
+                  "group": "navigation"
               }
           ]
+      },
+      "configuration": {
+          "title": "Fileinator",
+          "properties": {
+              "fileinator.ignoredFolders": {
+                  "type": "array",
+                  "default": [],
+                  "description": "List of folder paths (relative to workspace root) to ignore in Fileinator scans"
+              }
+          }
       }
   },
   "scripts": {

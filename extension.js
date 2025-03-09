@@ -18,6 +18,14 @@ function activate(context) {
             return;
         }
 
+        const config = vscode.workspace.getConfiguration('fileinator');
+        const ignoredFolders = config.get('ignoredFolders', []);
+        const relativeFolder = path.relative(workspaceFolder.uri.fsPath, folderPath).replace(/\\/g, '/');
+        if (ignoredFolders.includes(relativeFolder)) {
+            vscode.window.showInformationMessage(`Folder "${relativeFolder}" is ignored by Fileinator.`);
+            return;
+        }
+
         const excludeDirs = ['node_modules', '__pycache__', '.git', 'build', 'dist'];
         const excludeExts = ['.lock', '.log', '.md'];
 
@@ -27,8 +35,9 @@ function activate(context) {
                 const items = await fs.readdir(dir, { withFileTypes: true });
                 for (const item of items) {
                     const fullPath = path.join(dir, item.name);
+                    const relativePath = path.relative(workspaceFolder.uri.fsPath, fullPath).replace(/\\/g, '/');
                     if (item.isDirectory()) {
-                        if (!excludeDirs.includes(item.name)) {
+                        if (!excludeDirs.includes(item.name) && !ignoredFolders.includes(relativePath)) {
                             const subFiles = await getFiles(fullPath);
                             results = results.concat(subFiles);
                         }
@@ -45,7 +54,6 @@ function activate(context) {
             return results;
         }
 
-        const relativeFolder = path.relative(workspaceFolder.uri.fsPath, folderPath).replace(/\\/g, '/');
         vscode.window.showInformationMessage(`Generating complete data for ${relativeFolder}...`);
         const files = await getFiles(folderPath);
         if (files.length === 0) {
@@ -86,13 +94,24 @@ function activate(context) {
             return;
         }
 
+        const config = vscode.workspace.getConfiguration('fileinator');
+        const ignoredFolders = config.get('ignoredFolders', []);
+        const relativeFolder = path.relative(workspaceFolder.uri.fsPath, folderPath).replace(/\\/g, '/');
+        if (ignoredFolders.includes(relativeFolder)) {
+            vscode.window.showInformationMessage(`Folder "${relativeFolder}" is ignored by Fileinator.`);
+            return;
+        }
+
         const excludeDirs = ['node_modules', '__pycache__', '.git', 'build', 'dist'];
 
         async function buildTree(dir, prefix = '') {
             let tree = '';
             try {
                 const items = await fs.readdir(dir, { withFileTypes: true });
-                const filteredItems = items.filter(item => !excludeDirs.includes(item.name));
+                const filteredItems = items.filter(item => 
+                    !excludeDirs.includes(item.name) && 
+                    !ignoredFolders.includes(path.relative(workspaceFolder.uri.fsPath, path.join(dir, item.name)).replace(/\\/g, '/'))
+                );
                 for (let i = 0; i < filteredItems.length; i++) {
                     const item = filteredItems[i];
                     const fullPath = path.join(dir, item.name);
@@ -110,7 +129,6 @@ function activate(context) {
             return tree;
         }
 
-        const relativeFolder = path.relative(workspaceFolder.uri.fsPath, folderPath).replace(/\\/g, '/');
         vscode.window.showInformationMessage(`Generating file tree for ${relativeFolder}...`);
         const treeContent = await buildTree(folderPath);
         if (!treeContent.trim()) {
@@ -128,8 +146,64 @@ function activate(context) {
         vscode.window.showInformationMessage(`File tree generated for ${relativeFolder}`);
     });
 
+    let ignoreFromGenerationsDisposable = vscode.commands.registerCommand('fileinator.ignoreFromGenerations', async (uri) => {
+        if (!uri || !uri.fsPath) {
+            vscode.window.showErrorMessage('Please right-click a folder!');
+            return;
+        }
+
+        const folderPath = uri.fsPath;
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder found!');
+            return;
+        }
+
+        const relativeFolder = path.relative(workspaceFolder.uri.fsPath, folderPath).replace(/\\/g, '/');
+        const config = vscode.workspace.getConfiguration('fileinator');
+        const ignoredFolders = config.get('ignoredFolders', []);
+
+        if (ignoredFolders.includes(relativeFolder)) {
+            vscode.window.showInformationMessage(`Folder "${relativeFolder}" is already ignored.`);
+            return;
+        }
+
+        ignoredFolders.push(relativeFolder);
+        await config.update('ignoredFolders', ignoredFolders, vscode.ConfigurationTarget.Workspace);
+        vscode.window.showInformationMessage(`Folder "${relativeFolder}" added to Fileinator ignore list`);
+    });
+
+    let includeInGenerationsDisposable = vscode.commands.registerCommand('fileinator.includeInGenerations', async (uri) => {
+        if (!uri || !uri.fsPath) {
+            vscode.window.showErrorMessage('Please right-click a folder!');
+            return;
+        }
+
+        const folderPath = uri.fsPath;
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder found!');
+            return;
+        }
+
+        const relativeFolder = path.relative(workspaceFolder.uri.fsPath, folderPath).replace(/\\/g, '/');
+        const config = vscode.workspace.getConfiguration('fileinator');
+        let ignoredFolders = config.get('ignoredFolders', []);
+
+        if (!ignoredFolders.includes(relativeFolder)) {
+            vscode.window.showInformationMessage(`Folder "${relativeFolder}" is not currently ignored.`);
+            return;
+        }
+
+        ignoredFolders = ignoredFolders.filter(folder => folder !== relativeFolder);
+        await config.update('ignoredFolders', ignoredFolders, vscode.ConfigurationTarget.Workspace);
+        vscode.window.showInformationMessage(`Folder "${relativeFolder}" removed from Fileinator ignore list`);
+    });
+
     context.subscriptions.push(generateCompleteDataDisposable);
     context.subscriptions.push(generateFileTreeDisposable);
+    context.subscriptions.push(ignoreFromGenerationsDisposable);
+    context.subscriptions.push(includeInGenerationsDisposable);
 }
 
 function deactivate() {}
