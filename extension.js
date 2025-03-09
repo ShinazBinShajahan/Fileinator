@@ -5,7 +5,6 @@ const path = require('path');
 function activate(context) {
     console.log('Fileinator is now active!');
 
-    // Function to update the ignore context for a given URI
     async function updateIgnoreContext(uri) {
         if (!uri || !uri.fsPath) {
             await vscode.commands.executeCommand('setContext', 'fileinator.isIgnored', false);
@@ -26,7 +25,7 @@ function activate(context) {
         console.log(`Context updated - relativeFolder: "${relativeFolder}", isIgnored: ${isIgnored}, ignoredFolders: ${JSON.stringify(ignoredFolders)}`);
     }
 
-    // Update context when Explorer selection changes
+
     context.subscriptions.push(
         vscode.window.onDidChangeVisibleTextEditors(async () => {
             const uri = vscode.window.activeTextEditor?.document.uri || vscode.window.activeExplorerItem?.resourceUri;
@@ -246,7 +245,7 @@ function activate(context) {
     context.subscriptions.push(ignoreFromGenerationsDisposable);
     context.subscriptions.push(includeInGenerationsDisposable);
 
-    // Initial context update
+
     const initialUri = vscode.window.activeTextEditor?.document.uri || vscode.window.activeExplorerItem?.resourceUri;
     if (initialUri) updateIgnoreContext(initialUri);
 }
