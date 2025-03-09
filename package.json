@@ -47,12 +47,12 @@
                   "group": "navigation"
               },
               {
-                  "when": "resourceDirname",
+                  "when": "resourceDirname && !fileinator.isIgnored",
                   "command": "fileinator.ignoreFromGenerations",
                   "group": "navigation"
               },
               {
-                  "when": "resourceDirname",
+                  "when": "resourceDirname && fileinator.isIgnored",
                   "command": "fileinator.includeInGenerations",
                   "group": "navigation"
               }

@@ -5,6 +5,41 @@ const path = require('path');
 function activate(context) {
     console.log('Fileinator is now active!');
 
+    // Function to update the ignore context for a given URI
+    async function updateIgnoreContext(uri) {
+        if (!uri || !uri.fsPath) {
+            await vscode.commands.executeCommand('setContext', 'fileinator.isIgnored', false);
+            return;
+        }
+
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+        if (!workspaceFolder) {
+            await vscode.commands.executeCommand('setContext', 'fileinator.isIgnored', false);
+            return;
+        }
+
+        const relativeFolder = path.relative(workspaceFolder.uri.fsPath, uri.fsPath).replace(/\\/g, '/');
+        const config = vscode.workspace.getConfiguration('fileinator');
+        const ignoredFolders = config.get('ignoredFolders', []);
+        const isIgnored = ignoredFolders.includes(relativeFolder);
+        await vscode.commands.executeCommand('setContext', 'fileinator.isIgnored', isIgnored);
+        console.log(`Context updated - relativeFolder: "${relativeFolder}", isIgnored: ${isIgnored}, ignoredFolders: ${JSON.stringify(ignoredFolders)}`);
+    }
+
+    // Update context when Explorer selection changes
+    context.subscriptions.push(
+        vscode.window.onDidChangeVisibleTextEditors(async () => {
+            const uri = vscode.window.activeTextEditor?.document.uri || vscode.window.activeExplorerItem?.resourceUri;
+            await updateIgnoreContext(uri);
+        }),
+        vscode.workspace.onDidChangeConfiguration(async (e) => {
+            if (e.affectsConfiguration('fileinator.ignoredFolders')) {
+                const uri = vscode.window.activeTextEditor?.document.uri || vscode.window.activeExplorerItem?.resourceUri;
+                await updateIgnoreContext(uri);
+            }
+        })
+    );
+
     let generateCompleteDataDisposable = vscode.commands.registerCommand('fileinator.generateCompleteData', async (uri) => {
         if (!uri || !uri.fsPath) {
             vscode.window.showErrorMessage('Please right-click a folder!');
@@ -72,7 +107,7 @@ function activate(context) {
                 outputContent += `${relativePath}:\n\ncontents:\nError reading file: ${err.message}\n\n`;
             }
             if (i < files.length - 1) {
-                outputContent += '---\n\n';
+                outputContent += '============================\n\n';
             }
         }
 
@@ -168,12 +203,13 @@ function activate(context) {
         const ignoredFolders = config.get('ignoredFolders', []);
 
         if (ignoredFolders.includes(relativeFolder)) {
-            vscode.window.showInformationMessage(`Folder "${relativeFolder}" is already ignored. Use "Include in Generations" to re-enable it.`);
+            vscode.window.showInformationMessage(`Folder "${relativeFolder}" is already ignored.`);
             return;
         }
 
         ignoredFolders.push(relativeFolder);
         await config.update('ignoredFolders', ignoredFolders, vscode.ConfigurationTarget.Workspace);
+        await updateIgnoreContext(uri);
         vscode.window.showInformationMessage(`Folder "${relativeFolder}" added to Fileinator ignore list`);
     });
 
@@ -195,12 +231,13 @@ function activate(context) {
         let ignoredFolders = config.get('ignoredFolders', []);
 
         if (!ignoredFolders.includes(relativeFolder)) {
-            vscode.window.showInformationMessage(`Folder "${relativeFolder}" is not ignored. Use "Ignore from Generations" to ignore it.`);
+            vscode.window.showInformationMessage(`Folder "${relativeFolder}" is not ignored.`);
             return;
         }
 
         ignoredFolders = ignoredFolders.filter(folder => folder !== relativeFolder);
         await config.update('ignoredFolders', ignoredFolders, vscode.ConfigurationTarget.Workspace);
+        await updateIgnoreContext(uri);
         vscode.window.showInformationMessage(`Folder "${relativeFolder}" removed from Fileinator ignore list`);
     });
 
@@ -208,6 +245,10 @@ function activate(context) {
     context.subscriptions.push(generateFileTreeDisposable);
     context.subscriptions.push(ignoreFromGenerationsDisposable);
     context.subscriptions.push(includeInGenerationsDisposable);
+
+    // Initial context update
+    const initialUri = vscode.window.activeTextEditor?.document.uri || vscode.window.activeExplorerItem?.resourceUri;
+    if (initialUri) updateIgnoreContext(initialUri);
 }
 
 function deactivate() {}
