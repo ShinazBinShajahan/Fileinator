@@ -3,31 +3,43 @@
   "displayName": "Fileinator",
   "description": "Scans folders and displays file contents or tree structure in a new tab",
   "version": "0.0.1",
+  "publisher": "shinazbinshajahan",
   "engines": {
-    "vscode": "^1.98.0"
+      "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+      "Other"
   ],
   "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
-    "commands": [{
-      "command": "fileinator.helloWorld",
-      "title": "Hello World"
-    }]
+      "commands": [
+          {
+              "command": "fileinator.generateCompleteData",
+              "title": "Fileinator - Generate Complete Data"
+          }
+      ],
+      "menus": {
+          "explorer/context": [
+              {
+                  "when": "resourceDirname",
+                  "command": "fileinator.generateCompleteData",
+                  "group": "navigation"
+              }
+          ]
+      }
   },
   "scripts": {
-    "lint": "eslint .",
-    "pretest": "npm run lint",
-    "test": "vscode-test"
+      "lint": "eslint .",
+      "pretest": "npm run lint",
+      "test": "node ./test/runTest.js"
   },
   "devDependencies": {
-    "@types/vscode": "^1.98.0",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "20.x",
-    "eslint": "^9.21.0",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+      "@types/vscode": "^1.85.0",
+      "@types/mocha": "^10.0.6",
+      "@types/node": "18.x",
+      "eslint": "^8.56.0",
+      "mocha": "^10.2.0",
+      "@vscode/test-electron": "^2.3.9"
   }
 }

@@ -1,36 +1,84 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
+const fs = require('fs').promises;
+const path = require('path');
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-
-/**
- * @param {vscode.ExtensionContext} context
- */
 function activate(context) {
+    console.log('Fileinator is now active!');
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "fileinator" is now active!');
+    let disposable = vscode.commands.registerCommand('fileinator.generateCompleteData', async (uri) => {
+        if (!uri || !uri.fsPath) {
+            vscode.window.showErrorMessage('Please right-click a folder!');
+            return;
+        }
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with  registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('fileinator.helloWorld', function () {
-		// The code you place here will be executed every time your command is executed
+        const folderPath = uri.fsPath;
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder found!');
+            return;
+        }
 
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Fileinator!');
-	});
+        const excludeDirs = ['node_modules', '__pycache__', '.git', 'build', 'dist'];
+        const excludeExts = ['.lock', '.log', '.md'];
 
-	context.subscriptions.push(disposable);
+        async function getFiles(dir) {
+            let results = [];
+            try {
+                const items = await fs.readdir(dir, { withFileTypes: true });
+                for (const item of items) {
+                    const fullPath = path.join(dir, item.name);
+                    if (item.isDirectory()) {
+                        if (!excludeDirs.includes(item.name)) {
+                            const subFiles = await getFiles(fullPath);
+                            results = results.concat(subFiles);
+                        }
+                    } else {
+                        const ext = path.extname(item.name);
+                        if (!excludeExts.includes(ext)) {
+                            results.push(fullPath);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error(`Error reading directory ${dir}: ${err.message}`);
+            }
+            return results;
+        }
+
+        const relativeFolder = path.relative(workspaceFolder.uri.fsPath, folderPath).replace(/\\/g, '/');
+        vscode.window.showInformationMessage(`Generating complete data for ${relativeFolder}...`);
+        const files = await getFiles(folderPath);
+        if (files.length === 0) {
+            vscode.window.showWarningMessage(`No files found in ${relativeFolder}.`);
+            return;
+        }
+
+        let outputContent = '';
+        for (const file of files) {
+            const relativePath = path.relative(workspaceFolder.uri.fsPath, file).replace(/\\/g, '/');
+            try {
+                const content = await fs.readFile(file, 'utf8');
+                outputContent += `${relativePath}:\n\ncontents:\n${content.trim()}\n\n`;
+            } catch (err) {
+                outputContent += `${relativePath}:\n\ncontents:\nError reading file: ${err.message}\n\n`;
+            }
+        }
+
+        const document = await vscode.workspace.openTextDocument({
+            content: outputContent,
+            language: 'plaintext',
+            uri: vscode.Uri.parse(`untitled:Complete Data - ${relativeFolder}`)
+        });
+        await vscode.window.showTextDocument(document);
+        vscode.window.showInformationMessage(`Complete data generated for ${relativeFolder}`);
+    });
+
+    context.subscriptions.push(disposable);
 }
 
-// This method is called when your extension is deactivated
 function deactivate() {}
 
 module.exports = {
-	activate,
-	deactivate
-}
+    activate,
+    deactivate
+};
