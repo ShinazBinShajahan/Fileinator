@@ -1,7 +1,7 @@
 # Fileinator - VSCode Extension
 
 ![Fileinator Icon](icon.png)  
-**Version:** 0.0.3  
+**Version:** 0.0.6  
 **Publisher:** shinazbinshajahan  
 **Repository:** [github.com/shinazbinshajahan/fileinator](https://github.com/shinazbinshajahan/fileinator)
 
