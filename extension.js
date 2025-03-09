@@ -5,7 +5,7 @@ const path = require('path');
 function activate(context) {
     console.log('Fileinator is now active!');
 
-    let disposable = vscode.commands.registerCommand('fileinator.generateCompleteData', async (uri) => {
+    let generateCompleteDataDisposable = vscode.commands.registerCommand('fileinator.generateCompleteData', async (uri) => {
         if (!uri || !uri.fsPath) {
             vscode.window.showErrorMessage('Please right-click a folder!');
             return;
@@ -73,7 +73,63 @@ function activate(context) {
         vscode.window.showInformationMessage(`Complete data generated for ${relativeFolder}`);
     });
 
-    context.subscriptions.push(disposable);
+    let generateFileTreeDisposable = vscode.commands.registerCommand('fileinator.generateFileTree', async (uri) => {
+        if (!uri || !uri.fsPath) {
+            vscode.window.showErrorMessage('Please right-click a folder!');
+            return;
+        }
+
+        const folderPath = uri.fsPath;
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder found!');
+            return;
+        }
+
+        const excludeDirs = ['node_modules', '__pycache__', '.git', 'build', 'dist'];
+
+        async function buildTree(dir, prefix = '') {
+            let tree = '';
+            try {
+                const items = await fs.readdir(dir, { withFileTypes: true });
+                const filteredItems = items.filter(item => !excludeDirs.includes(item.name));
+                for (let i = 0; i < filteredItems.length; i++) {
+                    const item = filteredItems[i];
+                    const fullPath = path.join(dir, item.name);
+                    const isLast = i === filteredItems.length - 1;
+                    const connector = isLast ? '└── ' : '├── ';
+                    tree += `${prefix}${connector}${item.name}\n`;
+                    if (item.isDirectory()) {
+                        const newPrefix = prefix + (isLast ? '    ' : '│   ');
+                        tree += await buildTree(fullPath, newPrefix);
+                    }
+                }
+            } catch (err) {
+                tree += `${prefix}└── Error reading directory: ${err.message}\n`;
+            }
+            return tree;
+        }
+
+        const relativeFolder = path.relative(workspaceFolder.uri.fsPath, folderPath).replace(/\\/g, '/');
+        vscode.window.showInformationMessage(`Generating file tree for ${relativeFolder}...`);
+        const treeContent = await buildTree(folderPath);
+        if (!treeContent.trim()) {
+            vscode.window.showWarningMessage(`No files or folders found in ${relativeFolder}.`);
+            return;
+        }
+
+        const outputContent = `File Tree for ${relativeFolder}:\n\n${treeContent}`;
+        const document = await vscode.workspace.openTextDocument({
+            content: outputContent,
+            language: 'plaintext',
+            uri: vscode.Uri.parse(`untitled:Filetree - ${relativeFolder}`)
+        });
+        await vscode.window.showTextDocument(document);
+        vscode.window.showInformationMessage(`File tree generated for ${relativeFolder}`);
+    });
+
+    context.subscriptions.push(generateCompleteDataDisposable);
+    context.subscriptions.push(generateFileTreeDisposable);
 }
 
 function deactivate() {}

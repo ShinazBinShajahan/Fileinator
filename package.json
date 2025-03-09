@@ -17,6 +17,10 @@
           {
               "command": "fileinator.generateCompleteData",
               "title": "Fileinator - Generate Complete Data"
+          },
+          {
+              "command": "fileinator.generateFileTree",
+              "title": "Fileinator - Generate FileTree"
           }
       ],
       "menus": {
@@ -24,6 +28,11 @@
               {
                   "when": "resourceDirname",
                   "command": "fileinator.generateCompleteData",
+                  "group": "navigation"
+              },
+              {
+                  "when": "resourceDirname",
+                  "command": "fileinator.generateFileTree",
                   "group": "navigation"
               }
           ]
